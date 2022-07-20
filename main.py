@@ -24,6 +24,8 @@ async def fetch_stores(input: StoreInputList):
     for sku in input.sku_list:
         sku_values.append(sku.sku_no)
 
+    sku_value_chunks = chunks(sku_values, 10)
+
     #Retrieve values for the requested store from Datastore
     requested_store_soh = get_requested_store_stock(input.store_no, sku_values)
 
@@ -32,13 +34,13 @@ async def fetch_stores(input: StoreInputList):
     route_code = requested_store_soh[0]['route_code']
 
     hub_route_match_list_soh = get_hub_route_match(
-        hub_code, route_code, sku_values)
+        hub_code, route_code, sku_value_chunks)
 
     hub_match_list_soh = get_hub_match(
-         hub_code, sku_values)
+         hub_code, sku_value_chunks)
 
     route_list_soh = get_route_match(
-        route_code, sku_values)
+        route_code, sku_value_chunks)
 
     returned_store_objects,processed_so_far = get_order_fulfilled_stores(
         input.sku_list, requested_store_soh, 'STORE_MATCH', input.store_no)
@@ -55,13 +57,8 @@ async def fetch_stores(input: StoreInputList):
 
     returned_route_stores,route_stores_processed = get_order_fulfilled_stores(
         input.sku_list, route_list_soh, 'ROUTE_MATCH', input.store_no,processed_so_far)
-    
-    all_returned_stores = returned_store_objects + returned_hub_route_stores + returned_hub_stores + returned_route_stores
-    
-    if len(all_returned_stores) == 0:
-        return StoreOutput(store=9999999,type="Current order cannot be fulfilled")
 
-    return all_returned_stores
+    return returned_store_objects + returned_hub_route_stores + returned_hub_stores + returned_route_stores
 
 def get_requested_store_stock(store_no, sku_values):
     client = datastore.Client()
@@ -76,40 +73,47 @@ def get_requested_store_stock(store_no, sku_values):
 
     return results
 
-def get_hub_route_match(hub_code, route_code, sku_values):
+def get_hub_route_match(hub_code, route_code, sku_value_chunks):
+    client = datastore.Client()
+    
+    combined_query_results = []
+    for sku_batch in sku_value_chunks:
+        query = client.query(kind="sohval", namespace='soh')
+        query.add_filter('hub_code', '=', hub_code)
+        query.add_filter('route_code', '=', route_code)
+        query.add_filter('sku_no', "IN", sku_batch)
+
+        combined_query_results = combined_query_results + list(query.fetch())
+
+    return combined_query_results
+
+
+def get_hub_match(hub_code, sku_value_chunks):
     client = datastore.Client()
 
-    query = client.query(kind="sohval", namespace='soh')
-    query.add_filter('hub_code', '=', hub_code)
-    query.add_filter('route_code', '=', route_code)
-    query.add_filter('sku_no', "IN", sku_values)
+    combined_query_results = []
+    for sku_batch in sku_value_chunks:
+        query = client.query(kind="sohval", namespace='soh')
+        query.add_filter('hub_code', '=', hub_code)
+        query.add_filter('sku_no', "IN", sku_batch)
 
-    return list(query.fetch())
+        combined_query_results = combined_query_results + list(query.fetch())
+
+    return combined_query_results
 
 
-def get_hub_match(hub_code, sku_values):
+def get_route_match(route_code, sku_value_chunks):
     client = datastore.Client()
 
-    query = client.query(kind="sohval", namespace='soh')
+    combined_query_results = []
+    for sku_batch in sku_value_chunks:
+        query = client.query(kind="sohval", namespace='soh')
+        query.add_filter('route_code', '=', route_code)
+        query.add_filter('sku_no', "IN", sku_batch)
 
-    query.add_filter('hub_code', '=', hub_code)
+        combined_query_results = combined_query_results + list(query.fetch())
 
-    query.add_filter('sku_no', "IN", sku_values)
-
-    return list(query.fetch())
-
-
-def get_route_match(route_code, sku_values):
-    client = datastore.Client()
-
-    query = client.query(kind="sohval", namespace='soh')
-
-    query.add_filter('route_code', '=', route_code)
-
-    query.add_filter('sku_no', "IN", sku_values)
-
-    return list(query.fetch())
-
+    return combined_query_results
 
 def get_order_fulfilled_stores(api_input, datastore_output, match_type, request_store, processed_so_far = []):
     #TODO understand what I've done here
@@ -136,10 +140,14 @@ def get_order_fulfilled_stores(api_input, datastore_output, match_type, request_
 
             prev_store = single_entry['store_no']
 
-    #Below appends the final store to list if it can fulfill order
-    if order_fulfilled:
-        if match_type == 'STORE_MATCH' or prev_store != request_store and prev_store != -1:
-            store_obj_list.append(StoreOutput(store=prev_store, type=match_type))
-            store_list.append(prev_store)
+        #Below appends the final store to list if it can fulfill order
+        if order_fulfilled:
+            if match_type == 'STORE_MATCH' or prev_store != request_store and prev_store != -1:
+                store_obj_list.append(StoreOutput(store=prev_store, type=match_type))
+                store_list.append(prev_store)
 
     return store_obj_list,store_list
+
+def chunks(xs, n):
+    n = max(1, n)
+    return (xs[i:i+n] for i in range(0, len(xs), n))

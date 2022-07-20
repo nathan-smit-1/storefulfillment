@@ -4,7 +4,7 @@
 1.  Clone this repo
 2.  cd into storefulfillment directory
 3.  Build docker/container image by running the following command:  gcloud builds submit --tag gcr.io/{MY-PROJECT-ID}/storefulfillment
-4.  In GCP, create a service in Cloud Run
+4.  In GCP, create a service in Cloud Run and slect your docker image
 
     ![image](https://user-images.githubusercontent.com/95083111/180077623-8b01b1af-d130-49ba-a00d-59f3cf6166e9.png)
 

@@ -64,8 +64,7 @@ async def fetch_stores(input: StoreInputList):
     return all_returned_stores
 
 def get_requested_store_stock(store_no, sku_values):
-    client = datastore.Client.from_service_account_json(
-        'fabled-meridian-356811-67c024b54240.json')
+    client = datastore.Client()
 
     keys = []
 
@@ -78,8 +77,7 @@ def get_requested_store_stock(store_no, sku_values):
     return results
 
 def get_hub_route_match(hub_code, route_code, sku_values):
-    client = datastore.Client.from_service_account_json(
-        'fabled-meridian-356811-67c024b54240.json')
+    client = datastore.Client()
 
     query = client.query(kind="sohval", namespace='soh')
     query.add_filter('hub_code', '=', hub_code)
@@ -90,8 +88,7 @@ def get_hub_route_match(hub_code, route_code, sku_values):
 
 
 def get_hub_match(hub_code, sku_values):
-    client = datastore.Client.from_service_account_json(
-        'fabled-meridian-356811-67c024b54240.json')
+    client = datastore.Client()
 
     query = client.query(kind="sohval", namespace='soh')
 
@@ -103,8 +100,7 @@ def get_hub_match(hub_code, sku_values):
 
 
 def get_route_match(route_code, sku_values):
-    client = datastore.Client.from_service_account_json(
-        'fabled-meridian-356811-67c024b54240.json')
+    client = datastore.Client()
 
     query = client.query(kind="sohval", namespace='soh')
 

@@ -140,11 +140,11 @@ def get_order_fulfilled_stores(api_input, datastore_output, match_type, request_
 
             prev_store = single_entry['store_no']
 
-        #Below appends the final store to list if it can fulfill order
-        if order_fulfilled:
-            if match_type == 'STORE_MATCH' or prev_store != request_store and prev_store != -1:
-                store_obj_list.append(StoreOutput(store=prev_store, type=match_type))
-                store_list.append(prev_store)
+    #Below appends the final store to list if it can fulfill order
+    if order_fulfilled:
+        if match_type == 'STORE_MATCH' or prev_store != request_store and prev_store != -1:
+            store_obj_list.append(StoreOutput(store=prev_store, type=match_type))
+            store_list.append(prev_store)
 
     return store_obj_list,store_list
 

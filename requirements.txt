@@ -2,3 +2,4 @@ fastapi
 gunicorn
 pydantic
 uvicorn
+google-cloud-datastore

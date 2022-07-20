@@ -58,7 +58,12 @@ async def fetch_stores(input: StoreInputList):
     returned_route_stores,route_stores_processed = get_order_fulfilled_stores(
         input.sku_list, route_list_soh, 'ROUTE_MATCH', input.store_no,processed_so_far)
 
-    return returned_store_objects + returned_hub_route_stores + returned_hub_stores + returned_route_stores
+    all_returned_stores = returned_store_objects + returned_hub_route_stores + returned_hub_stores + returned_route_stores
+    
+    if len(all_returned_stores) == 0:
+        return StoreOutput(store=9999999,type="Current order cannot be fulfilled")
+
+    return all_returned_stores
 
 def get_requested_store_stock(store_no, sku_values):
     client = datastore.Client()
